@@ -1,29 +1,75 @@
-// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors
+// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, prefer_const_constructors_in_immutables
 
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:todoapp/data/database.dart';
+import 'package:todoapp/modules/dialog_box.dart';
 import 'package:todoapp/modules/todo_tile.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  // list of ToDo tasks
-  List toDoList = [
-    ["Do laundry", false],
-    ["Go to gym", false],
-    ["Buy groceries", false],
-    ["Read a book", false],
-  ];
+  // reference the hive box
+  final _myBox = Hive.box('mybox');
+  ToDoDataBase db = ToDoDataBase();
 
-  // checkbox changed
+  @override
+  void initState() {
+    // if is 1st time opening the app, create default data
+    if (_myBox.get("TODOLIST") == null) {
+      db.createInitialData();
+    } else {
+      //there already exists data
+      db.loadData();
+    }
+    super.initState();
+  }
+
+  // text controller
+  final _controller = TextEditingController();
+
+  // checkbox tapped
   void checkBoxChanged(bool? value, int index) {
     setState(() {
-      toDoList[index][1] = !toDoList[index][1];
+      db.toDoList[index][1] = !db.toDoList[index][1];
     });
+    db.updateDataBase();
+  }
+
+  // save new task
+  void saveNewTask() {
+    setState(() {
+      db.toDoList.add([_controller.text, false]);
+      _controller.clear();
+    });
+    Navigator.of(context).pop();
+    db.updateDataBase();
+  }
+
+  // create new task
+  void createNewTask() {
+    showDialog(
+        context: context,
+        builder: (context) {
+          return DialogBox(
+            controller: _controller,
+            onSave: saveNewTask,
+            onCancel: () => Navigator.of(context).pop(),
+          );
+        });
+  }
+
+  // detele task
+  void deleteTask(int index) {
+    setState(() {
+      db.toDoList.removeAt(index);
+    });
+    db.updateDataBase();
   }
 
   @override
@@ -31,20 +77,23 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: Colors.yellow[200],
       appBar: AppBar(
-        title: const Text("DO TO"),
+        title: const Text("TO DO"),
         centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: createNewTask,
+        backgroundColor: Colors.yellow,
         child: const Icon(Icons.add),
       ),
       body: ListView.builder(
-        itemCount: toDoList.length,
+        itemCount: db.toDoList.length,
         itemBuilder: (context, index) {
           return ToDoTile(
-              taskName: toDoList[index][0],
-              taskCompleted: toDoList[index][1],
-              onChanged: (value) => checkBoxChanged(value, index));
+            taskName: db.toDoList[index][0],
+            taskCompleted: db.toDoList[index][1],
+            onChanged: (value) => checkBoxChanged(value, index),
+            deleteFunction: (context) => deleteTask(index),
+          );
         },
       ),
     );

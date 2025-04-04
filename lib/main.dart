@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/adapters.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:todoapp/modules/home_page.dart';
 
-void main() {
+void main() async {
+  // init HIVE
+  await Hive.initFlutter();
+
+  // open box
+  // ignore: unused_local_variable
+  var box = await Hive.openBox('mybox');
+
   runApp(const MyApp());
 }
 
@@ -17,8 +26,11 @@ class MyApp extends StatelessWidget {
       home: HomePage(),
       theme: ThemeData(
         primarySwatch: Colors.yellow,
+        primaryColor: Colors.yellow,
         appBarTheme: const AppBarTheme(backgroundColor: Colors.yellow),
       ),
     );
   }
 }
+
+// 1:37
